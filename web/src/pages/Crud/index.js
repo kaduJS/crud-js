@@ -6,10 +6,12 @@ import { Form, Button, Row, Col, Table } from "react-bootstrap";
 import api from "../../services/api";
 
 export default function Crud() {
+  const [id, setId] = useState(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [admin, setAdmin] = useState(false);
+  const [editMode, setEditMode] = useState(true);
   const [state, setState] = useState([]);
 
   async function loadAPI() {
@@ -19,23 +21,59 @@ export default function Crud() {
     });
   }
 
-  function apiSendData(data) {
+  function apiCreateData(data) {
     api.post("/user", data);
+    // alert("Created");
+  }
+
+  function apiUpdateData(data) {
+    api.put(`/user/${data.id}`, data);
+    // alert("Updated");
+  }
+
+  function apiDeleteData(id) {
+    api.delete(`/user/${id}`);
+    // alert("Deleted");
   }
 
   useEffect(() => {
     loadAPI();
   }, []);
 
+  function clearFields() {
+    setId(0);
+    setName("");
+    setEmail("");
+    setPassword("");
+    setAdmin(false);
+  }
+
+  function handleEditMode(event, user) {
+    event.preventDefault();
+
+    editMode ? setEditMode(false) : setEditMode(true);
+
+    if (editMode) {
+      clearFields();
+      if (user.id) setId(user.id);
+      setName(user.name);
+      setEmail(user.email);
+      setAdmin(user.admin);
+    } else {
+      clearFields();
+    }
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
     const data = {
+      id,
       name,
       email,
       password,
       admin,
     };
-    apiSendData(data);
+    id ? apiUpdateData(data) : apiCreateData(data);
   }
 
   return (
@@ -49,7 +87,7 @@ export default function Crud() {
             <Form.Control
               type="text"
               placeholder="Nome"
-              defaultValue={name}
+              value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </Col>
@@ -63,7 +101,7 @@ export default function Crud() {
             <Form.Control
               type="email"
               placeholder="Email"
-              defaultValue={email}
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </Col>
@@ -77,7 +115,7 @@ export default function Crud() {
             <Form.Control
               type="password"
               placeholder="Senha"
-              defaultValue={password}
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </Col>
@@ -87,7 +125,7 @@ export default function Crud() {
           <Col sm={{ span: 10, offset: 2 }}>
             <Form.Check
               label="Admin"
-              defaultChecked={admin}
+              checked={admin}
               onChange={(e) => setAdmin(e.target.checked)}
             />
           </Col>
@@ -95,7 +133,7 @@ export default function Crud() {
 
         <Form.Group as={Row}>
           <Col sm={{ span: 10, offset: 2 }}>
-            <Button type="submit">Cadastrar</Button>
+            <Button type="submit">{!editMode ? "Salvar" : "Cadastrar"}</Button>
           </Col>
         </Form.Group>
       </Form>
@@ -107,6 +145,7 @@ export default function Crud() {
             <th>NOME</th>
             <th>EMAIL</th>
             <th>ADMIN</th>
+            <th>OPÇÕES</th>
           </tr>
         </thead>
         <tbody>
@@ -116,6 +155,20 @@ export default function Crud() {
               <td>{user.name}</td>
               <td>{user.email}</td>
               <td>{(user.admin && "SIM") || "NÃO"}</td>
+              <td>
+                <Button
+                  className="btn-table"
+                  onClick={(e) => handleEditMode(e, user)}
+                >
+                  {!editMode && user.id === id ? "Cancelar" : "Editar"}
+                </Button>
+                <Button
+                  className="btn-table"
+                  onClick={() => apiDeleteData(user.id)}
+                >
+                  Remover
+                </Button>
+              </td>
             </tr>
           ))}
         </tbody>
